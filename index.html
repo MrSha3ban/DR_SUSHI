@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Partner & Client Directory Engine</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb' },
+            supplier: { 500: '#10b981', 600: '#059669' },
+            customer: { 500: '#06b6d4', 600: '#0891b2' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    #map { height: 100%; min-height: 400px; z-index: 10; }
+    .custom-pin {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: white;
+      font-weight: bold;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      border: 2px solid #ffffff;
+    }
+    .pin-customer { background-color: #06b6d4; }
+    .pin-supplier { background-color: #10b981; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
+        <i data-lucide="map-pin" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-bold tracking-wide text-white">KEMET GARMENT CUSTOMERS AND SUPPLIERS</h1>
+        <p class="text-xs text-slate-400">Interactive Location & Contact Intelligence</p>
+      </div>
+    </div>
+
+    <!-- Stats & Quick Filters -->
+    <div class="flex items-center gap-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-sm">
+      <button id="btn-all" onclick="filterType('all')" class="px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-white shadow-sm border border-slate-700">
+        All (<span id="count-all">0</span>)
+      </button>
+      <button id="btn-customer" onclick="filterType('customer')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-cyan-400">
+        Customers (<span id="count-customer">0</span>)
+      </button>
+      <button id="btn-supplier" onclick="filterType('supplier')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-emerald-400">
+        Suppliers (<span id="count-supplier">0</span>)
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+    
+    <!-- Left Sidebar Directory -->
+    <section class="lg:col-span-5 flex flex-col bg-slate-900/50 border-r border-slate-800 h-full overflow-hidden">
+      
+      <!-- Search Bar -->
+      <div class="p-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur">
+        <div class="relative">
+          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
+          <input type="text" id="searchInput" oninput="renderEntities()" placeholder="Search by name, contact, city, or specialty..." 
+            class="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-slate-200 placeholder-slate-500">
+        </div>
+      </div>
+
+      <!-- Entity List -->
+      <div id="entityList" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <!-- Dynamic Cards Inserted Here -->
+      </div>
+    </section>
+
+    <!-- Right Map View -->
+    <section class="lg:col-span-7 relative h-full bg-slate-950">
+      <div id="map"></div>
+    </section>
+
+  </main>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <script>
+    // DATA MATRIX: Generated from your records
+    const entities = [
+      // SUPPLIERS
+      {
+        id: 1,
+        name: "ELVAN FABRICS",
+        type: "supplier",
+        category: "Fabrics & Textiles",
+        contactPerson: "AHMED HAIDE",
+        phone: "+201284147429",
+        email: "contact@elvanfabrics.com",
+        city: "Borg El Arab, Alex",
+        lat: 30.8850,
+        lng: 29.5600,
+        address: "المنطقة الصناعية الرابعة - برج العرب - الإسكندرية"
+      },
+      {
+        id: 2,
+        name: "ALEX TRADE",
+        type: "supplier",
+        category: "Trade & Logistics",
+        contactPerson: "IHAB",
+        phone: "+201202424242",
+        email: "info@alextrade.com",
+        city: "Mergham, Alex",
+        lat: 31.1000,
+        lng: 29.8000,
+        address: "مرغم الطريق الصحراوي - الإسكندرية"
+      },
+      {
+        id: 3,
+        name: "OLABI TEX",
+        type: "supplier",
+        category: "Textile Manufacturing",
+        contactPerson: "CLEIER NABILE",
+        phone: "+201206661820",
+        email: "sales@olabitex.com",
+        city: "10th of Ramadan",
+        lat: 30.2980,
+        lng: 31.7400,
+        address: "العاشر من رمضان المنطقة الصناعية الثانية"
+      },
+      {
+        id: 4,
+        name: "UNITED",
+        type: "supplier",
+        category: "Industrial Supplies",
+        contactPerson: "Mahmoud",
+        phone: "+201111388946",
+        email: "mahmoud@united-supplies.com",
+        city: "Moharam Bek, Alex",
+        lat: 31.1920,
+        lng: 29.9150,
+        address: "محرم بك - الإسكندرية"
+      },
+
+      // CUSTOMERS
+      {
+        id: 5,
+        name: "TEMA (LCW)",
+        type: "customer",
+        category: "Garment Retailer",
+        contactPerson: "AHMED FATHI",
+        phone: "+201066648093",
+        email: "a.fathi@lcwaikiki.com",
+        city: "Borg El Arab, Alex",
+        lat: 30.8870,
+        lng: 29.5630,
+        address: "المنطقة الصناعية الرابعة - برج العرب - الإسكندرية"
+      },
+      {
+        id: 6,
+        name: "CARINA",
+        type: "customer",
+        category: "Apparel & Fashion",
+        contactPerson: "KHALED",
+        phone: "+201022118212",
+        email: "khaled@carinawear.com",
+        city: "New Cairo",
+        lat: 30.0050,
+        lng: 31.4300,
+        address: "التجمع الخامس القاهرة الجديدة"
+      },
+      {
+        id: 7,
+        name: "NINOS",
+        type: "customer",
+        category: "Kids Wear & Retail",
+        contactPerson: "AMIRA",
+        phone: "+201007765029",
+        email: "amira@ninoswear.com",
+        city: "New Maadi, Cairo",
+        lat: 29.9700,
+        lng: 31.2800,
+        address: "المعادي الجديدة - القاهرة"
+      },
+      {
+        id: 8,
+        name: "FLO",
+        type: "customer",
+        category: "Footwear & Retail",
+        contactPerson: "TURKEY OFFICE",
+        phone: "-",
+        email: "info@flo.com.tr",
+        city: "Istanbul, Turkey",
+        lat: 41.0082,
+        lng: 28.9784,
+        address: "إسطنبول - تركيا"
+      }
+    ];
+
+    let currentFilter = 'all';
+    let map;
+    let markers = [];
+
+    // Initialize Map
+    function initMap() {
+      map = L.map('map', { zoomControl: false }).setView([30.0, 31.0], 6);
+      
+      // Dark visual tile layer
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        subdomains: 'abcd',
+        maxZoom: 19
+      }).addTo(map);
+
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+      renderEntities();
+    }
+
+    // Filter Controls
+    function filterType(type) {
+      currentFilter = type;
+      ['all', 'customer', 'supplier'].forEach(t => {
+        const btn = document.getElementById(`btn-${t}`);
+        if (t === type) {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-white shadow-sm border border-slate-700";
+        } else {
+          btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200";
+        }
+      });
+      renderEntities();
+    }
+
+    // Render Cards and Markers
+    function renderEntities() {
+      const search = document.getElementById('searchInput').value.toLowerCase();
+      const listContainer = document.getElementById('entityList');
+      listContainer.innerHTML = '';
+
+      // Clear existing markers
+      markers.forEach(m => map.removeLayer(m));
+      markers = [];
+
+      const filtered = entities.filter(item => {
+        const matchesType = currentFilter === 'all' || item.type === currentFilter;
+        const matchesSearch = item.name.toLowerCase().includes(search) || 
+                              item.contactPerson.toLowerCase().includes(search) ||
+                              item.city.toLowerCase().includes(search) ||
+                              item.address.toLowerCase().includes(search) ||
+                              item.category.toLowerCase().includes(search);
+        return matchesType && matchesSearch;
+      });
+
+      // Update Counts
+      document.getElementById('count-all').innerText = entities.length;
+      document.getElementById('count-customer').innerText = entities.filter(e => e.type === 'customer').length;
+      document.getElementById('count-supplier').innerText = entities.filter(e => e.type === 'supplier').length;
+
+      if (filtered.length === 0) {
+        listContainer.innerHTML = `
+          <div class="text-center py-12 text-slate-500">
+            <i data-lucide="map-pin-off" class="w-10 h-10 mx-auto mb-2 stroke-1"></i>
+            <p class="text-sm">No contacts found matching criteria.</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      const bounds = [];
+
+      filtered.forEach(item => {
+        const isCustomer = item.type === 'customer';
+        const badgeColor = isCustomer ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+        const pinClass = isCustomer ? 'pin-customer' : 'pin-supplier';
+
+        // Card HTML
+        const card = document.createElement('div');
+        card.className = "bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all hover:shadow-lg cursor-pointer group";
+        card.onclick = () => focusEntity(item.lat, item.lng);
+
+        card.innerHTML = `
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <span class="inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded-md border ${badgeColor} mb-1">
+                ${item.type}
+              </span>
+              <h3 class="font-bold text-slate-100 group-hover:text-blue-400 transition-colors">${item.name}</h3>
+            </div>
+            <span class="text-xs text-slate-400 flex items-center gap-1">
+              <i data-lucide="map-pin" class="w-3 h-3 text-slate-500"></i> ${item.city}
+            </span>
+          </div>
+          
+          <p class="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
+            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${item.contactPerson} &bull; <span class="text-slate-500">${item.category}</span>
+          </p>
+          <p class="text-[11px] text-slate-500 dir-rtl mb-3" dir="rtl">${item.address}</p>
+
+          <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
+            <a href="tel:${item.phone}" onclick="event.stopPropagation()" class="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 hover:bg-slate-800 text-xs text-slate-300 rounded-lg border border-slate-800 transition">
+              <i data-lucide="phone" class="w-3 h-3"></i> Call
+            </a>
+            <a href="mailto:${item.email}" onclick="event.stopPropagation()" class="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 hover:bg-slate-800 text-xs text-slate-300 rounded-lg border border-slate-800 transition">
+              <i data-lucide="mail" class="w-3 h-3"></i> Email
+            </a>
+            <a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" onclick="event.stopPropagation()" class="p-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-800 transition" title="Open in Google Maps">
+              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
+            </a>
+          </div>
+        `;
+        listContainer.appendChild(card);
+
+        // Custom Leaflet Pin Icon
+        const customIcon = L.divIcon({
+          className: 'custom-pin-wrapper',
+          html: `<div class="custom-pin ${pinClass} w-8 h-8">${item.type === 'customer' ? 'C' : 'S'}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        // Add Leaflet Marker
+        const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
+        
+        const popupContent = `
+          <div class="p-2 text-slate-900 font-sans">
+            <span class="text-[10px] font-bold uppercase tracking-wider ${isCustomer ? 'text-cyan-600' : 'text-emerald-600'}">${item.type}</span>
+            <h4 class="font-bold text-sm leading-tight">${item.name}</h4>
+            <p class="text-xs text-slate-600 mt-1">${item.address}</p>
+            <p class="text-xs text-slate-800 font-medium mt-1">Contact: ${item.contactPerson}</p>
+            <a href="tel:${item.phone}" class="inline-block mt-2 text-xs font-semibold text-blue-600 hover:underline">Call ${item.phone}</a>
+          </div>
+        `;
+
+        marker.bindPopup(popupContent);
+        markers.push(marker);
+        bounds.push([item.lat, item.lng]);
+      });
+
+      // Fit map bounds to visible markers
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+      }
+
+      lucide.createIcons();
+    }
+
+    // Zoom to specific point on card click
+    function focusEntity(lat, lng) {
+      map.flyTo([lat, lng], 14, { duration: 1.2 });
+      const targetMarker = markers.find(m => m.getLatLng().lat === lat && m.getLatLng().lng === lng);
+      if (targetMarker) targetMarker.openPopup();
+    }
+
+    window.onload = initMap;
+  </script>
+</body>
+</html>
