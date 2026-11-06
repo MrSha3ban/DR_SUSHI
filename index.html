@@ -1,370 +1,1130 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Partner & Client Directory Engine</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: { 500: '#3b82f6', 600: '#2563eb' },
-            supplier: { 500: '#10b981', 600: '#059669' },
-            customer: { 500: '#06b6d4', 600: '#0891b2' }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    #map { height: 100%; min-height: 400px; z-index: 10; }
-    .custom-pin {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      color: white;
-      font-weight: bold;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      border: 2px solid #ffffff;
-    }
-    .pin-customer { background-color: #06b6d4; }
-    .pin-supplier { background-color: #10b981; }
-  </style>
-</head>
-<body class="bg-slate-950 text-slate-100 font-sans h-screen flex flex-col overflow-hidden">
-
-  <!-- Header -->
-  <header class="bg-slate-900 border-b border-slate-800 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
-    <div class="flex items-center gap-3">
-      <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg border border-blue-500/30">
-        <i data-lucide="map-pin" class="w-6 h-6"></i>
-      </div>
-      <div>
-        <h1 class="text-xl font-bold tracking-wide text-white">KEMET GARMENT CUSTOMERS AND SUPPLIERS</h1>
-        <p class="text-xs text-slate-400">Interactive Location & Contact Intelligence</p>
-      </div>
-    </div>
-
-    <!-- Stats & Quick Filters -->
-    <div class="flex items-center gap-3 bg-slate-950 p-1.5 rounded-xl border border-slate-800 text-sm">
-      <button id="btn-all" onclick="filterType('all')" class="px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-white shadow-sm border border-slate-700">
-        All (<span id="count-all">0</span>)
-      </button>
-      <button id="btn-customer" onclick="filterType('customer')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-cyan-400">
-        Customers (<span id="count-customer">0</span>)
-      </button>
-      <button id="btn-supplier" onclick="filterType('supplier')" class="px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-emerald-400">
-        Suppliers (<span id="count-supplier">0</span>)
-      </button>
-    </div>
-  </header>
-
-  <!-- Main Grid Layout -->
-  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دكتور سوشي - Dr. Sushi | POS & QR Menu & KDS System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
     
-    <!-- Left Sidebar Directory -->
-    <section class="lg:col-span-5 flex flex-col bg-slate-900/50 border-r border-slate-800 h-full overflow-hidden">
-      
-      <!-- Search Bar -->
-      <div class="p-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3.5 text-slate-400"></i>
-          <input type="text" id="searchInput" oninput="renderEntities()" placeholder="Search by name, contact, city, or specialty..." 
-            class="w-full pl-9 pr-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition text-slate-200 placeholder-slate-500">
-        </div>
-      </div>
-
-      <!-- Entity List -->
-      <div id="entityList" class="flex-1 overflow-y-auto p-4 space-y-3">
-        <!-- Dynamic Cards Inserted Here -->
-      </div>
-    </section>
-
-    <!-- Right Map View -->
-    <section class="lg:col-span-7 relative h-full bg-slate-950">
-      <div id="map"></div>
-    </section>
-
-  </main>
-
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  
-  <script>
-    // DATA MATRIX: Generated from your records
-    const entities = [
-      // SUPPLIERS
-      {
-        id: 1,
-        name: "ELVAN FABRICS",
-        type: "supplier",
-        category: "Fabrics & Textiles",
-        contactPerson: "AHMED HAIDE",
-        phone: "+201284147429",
-        email: "contact@elvanfabrics.com",
-        city: "Borg El Arab, Alex",
-        lat: 30.8850,
-        lng: 29.5600,
-        address: "المنطقة الصناعية الرابعة - برج العرب - الإسكندرية"
-      },
-      {
-        id: 2,
-        name: "ALEX TRADE",
-        type: "supplier",
-        category: "Trade & Logistics",
-        contactPerson: "IHAB",
-        phone: "+201202424242",
-        email: "info@alextrade.com",
-        city: "Mergham, Alex",
-        lat: 31.1000,
-        lng: 29.8000,
-        address: "مرغم الطريق الصحراوي - الإسكندرية"
-      },
-      {
-        id: 3,
-        name: "OLABI TEX",
-        type: "supplier",
-        category: "Textile Manufacturing",
-        contactPerson: "CLEIER NABILE",
-        phone: "+201206661820",
-        email: "sales@olabitex.com",
-        city: "10th of Ramadan",
-        lat: 30.2980,
-        lng: 31.7400,
-        address: "العاشر من رمضان المنطقة الصناعية الثانية"
-      },
-      {
-        id: 4,
-        name: "UNITED",
-        type: "supplier",
-        category: "Industrial Supplies",
-        contactPerson: "Mahmoud",
-        phone: "+201111388946",
-        email: "mahmoud@united-supplies.com",
-        city: "Moharam Bek, Alex",
-        lat: 31.1920,
-        lng: 29.9150,
-        address: "محرم بك - الإسكندرية"
-      },
-
-      // CUSTOMERS
-      {
-        id: 5,
-        name: "TEMA (LCW)",
-        type: "customer",
-        category: "Garment Retailer",
-        contactPerson: "AHMED FATHI",
-        phone: "+201066648093",
-        email: "a.fathi@lcwaikiki.com",
-        city: "Borg El Arab, Alex",
-        lat: 30.8870,
-        lng: 29.5630,
-        address: "المنطقة الصناعية الرابعة - برج العرب - الإسكندرية"
-      },
-      {
-        id: 6,
-        name: "CARINA",
-        type: "customer",
-        category: "Apparel & Fashion",
-        contactPerson: "KHALED",
-        phone: "+201022118212",
-        email: "khaled@carinawear.com",
-        city: "New Cairo",
-        lat: 30.0050,
-        lng: 31.4300,
-        address: "التجمع الخامس القاهرة الجديدة"
-      },
-      {
-        id: 7,
-        name: "NINOS",
-        type: "customer",
-        category: "Kids Wear & Retail",
-        contactPerson: "AMIRA",
-        phone: "+201007765029",
-        email: "amira@ninoswear.com",
-        city: "New Maadi, Cairo",
-        lat: 29.9700,
-        lng: 31.2800,
-        address: "المعادي الجديدة - القاهرة"
-      },
-      {
-        id: 8,
-        name: "FLO",
-        type: "customer",
-        category: "Footwear & Retail",
-        contactPerson: "TURKEY OFFICE",
-        phone: "-",
-        email: "info@flo.com.tr",
-        city: "Istanbul, Turkey",
-        lat: 41.0082,
-        lng: 28.9784,
-        address: "إسطنبول - تركيا"
-      }
-    ];
-
-    let currentFilter = 'all';
-    let map;
-    let markers = [];
-
-    // Initialize Map
-    function initMap() {
-      map = L.map('map', { zoomControl: false }).setView([30.0, 31.0], 6);
-      
-      // Dark visual tile layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
-      }).addTo(map);
-
-      L.control.zoom({ position: 'bottomright' }).addTo(map);
-      renderEntities();
-    }
-
-    // Filter Controls
-    function filterType(type) {
-      currentFilter = type;
-      ['all', 'customer', 'supplier'].forEach(t => {
-        const btn = document.getElementById(`btn-${t}`);
-        if (t === type) {
-          btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all bg-slate-800 text-white shadow-sm border border-slate-700";
-        } else {
-          btn.className = "px-3 py-1.5 rounded-lg font-medium transition-all text-slate-400 hover:text-slate-200";
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gold: {
+                            DEFAULT: '#D4AF37',
+                            light: '#F3E5AB',
+                            dark: '#AA820A'
+                        },
+                        sushiRed: '#FF2E4C',
+                        darkBg: '#0D0D11',
+                        cardBg: '#16161E',
+                        glassBg: 'rgba(22, 22, 30, 0.75)',
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
         }
-      });
-      renderEntities();
-    }
+    </script>
+    
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #0D0D11;
+            color: #F3F4F6;
+            overflow-x: hidden;
+        }
+        
+        /* Glassmorphism custom styling */
+        .glass-panel {
+            background: rgba(22, 22, 30, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.15);
+        }
 
-    // Render Cards and Markers
-    function renderEntities() {
-      const search = document.getElementById('searchInput').value.toLowerCase();
-      const listContainer = document.getElementById('entityList');
-      listContainer.innerHTML = '';
+        .glass-panel-gold {
+            background: rgba(212, 175, 55, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(212, 175, 55, 0.3);
+        }
 
-      // Clear existing markers
-      markers.forEach(m => map.removeLayer(m));
-      markers = [];
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D0D11;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF2E4C;
+        }
 
-      const filtered = entities.filter(item => {
-        const matchesType = currentFilter === 'all' || item.type === currentFilter;
-        const matchesSearch = item.name.toLowerCase().includes(search) || 
-                              item.contactPerson.toLowerCase().includes(search) ||
-                              item.city.toLowerCase().includes(search) ||
-                              item.address.toLowerCase().includes(search) ||
-                              item.category.toLowerCase().includes(search);
-        return matchesType && matchesSearch;
-      });
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF099 0%, #D4AF37 50%, #997A15 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-      // Update Counts
-      document.getElementById('count-all').innerText = entities.length;
-      document.getElementById('count-customer').innerText = entities.filter(e => e.type === 'customer').length;
-      document.getElementById('count-supplier').innerText = entities.filter(e => e.type === 'supplier').length;
+        .gold-btn {
+            background: linear-gradient(135deg, #D4AF37 0%, #AA820A 100%);
+            transition: all 0.3s ease;
+        }
+        .gold-btn:hover {
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
+            transform: translateY(-1px);
+        }
 
-      if (filtered.length === 0) {
-        listContainer.innerHTML = `
-          <div class="text-center py-12 text-slate-500">
-            <i data-lucide="map-pin-off" class="w-10 h-10 mx-auto mb-2 stroke-1"></i>
-            <p class="text-sm">No contacts found matching criteria.</p>
-          </div>`;
-        lucide.createIcons();
-        return;
-      }
+        /* Animations */
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(255, 46, 76, 0.3); }
+            50% { box-shadow: 0 0 22px rgba(255, 46, 76, 0.7); }
+        }
+        .urgent-card {
+            animation: pulseGlow 2s infinite;
+        }
 
-      const bounds = [];
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-gold selection:text-black">
 
-      filtered.forEach(item => {
-        const isCustomer = item.type === 'customer';
-        const badgeColor = isCustomer ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
-        const pinClass = isCustomer ? 'pin-customer' : 'pin-supplier';
-
-        // Card HTML
-        const card = document.createElement('div');
-        card.className = "bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all hover:shadow-lg cursor-pointer group";
-        card.onclick = () => focusEntity(item.lat, item.lng);
-
-        card.innerHTML = `
-          <div class="flex justify-between items-start mb-2">
-            <div>
-              <span class="inline-block px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded-md border ${badgeColor} mb-1">
-                ${item.type}
-              </span>
-              <h3 class="font-bold text-slate-100 group-hover:text-blue-400 transition-colors">${item.name}</h3>
+    <!-- TOP NAVIGATION & APP MODE SWITCHER (Header for testing/demo) -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-gold/20 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Brand Logo & Slogan -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full border-2 border-gold flex items-center justify-center bg-black/50 shadow-[0_0_10px_rgba(212,175,55,0.3)]">
+                    <i class="fa-solid fa-utensils text-gold text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-wide gold-gradient-text">دكتور سوشي <span class="text-xs font-normal text-gray-400">Dr. Sushi</span></h1>
+                    <p class="text-[10px] text-gray-400">Doctor Sushi: Expertly Crafted Asian Fusion</p>
+                </div>
             </div>
-            <span class="text-xs text-slate-400 flex items-center gap-1">
-              <i data-lucide="map-pin" class="w-3 h-3 text-slate-500"></i> ${item.city}
-            </span>
-          </div>
-          
-          <p class="text-xs text-slate-400 mb-1 flex items-center gap-1.5">
-            <i data-lucide="user" class="w-3.5 h-3.5 text-slate-500"></i> ${item.contactPerson} &bull; <span class="text-slate-500">${item.category}</span>
-          </p>
-          <p class="text-[11px] text-slate-500 dir-rtl mb-3" dir="rtl">${item.address}</p>
 
-          <div class="flex items-center gap-2 pt-2 border-t border-slate-800/80">
-            <a href="tel:${item.phone}" onclick="event.stopPropagation()" class="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 hover:bg-slate-800 text-xs text-slate-300 rounded-lg border border-slate-800 transition">
-              <i data-lucide="phone" class="w-3 h-3"></i> Call
-            </a>
-            <a href="mailto:${item.email}" onclick="event.stopPropagation()" class="flex-1 flex items-center justify-center gap-1 py-1.5 bg-slate-950 hover:bg-slate-800 text-xs text-slate-300 rounded-lg border border-slate-800 transition">
-              <i data-lucide="mail" class="w-3 h-3"></i> Email
-            </a>
-            <a href="https://maps.google.com/?q=${item.lat},${item.lng}" target="_blank" onclick="event.stopPropagation()" class="p-1.5 bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-800 transition" title="Open in Google Maps">
-              <i data-lucide="external-link" class="w-3.5 h-3.5"></i>
-            </a>
-          </div>
-        `;
-        listContainer.appendChild(card);
+            <!-- System Role Switcher Tabs -->
+            <div class="flex items-center bg-black/60 p-1.5 rounded-full border border-gold/20 shadow-inner">
+                <button onclick="switchMode('menu')" id="btn-mode-menu" class="mode-tab-btn px-4 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 bg-gold text-black shadow-md">
+                    <i class="fa-solid fa-qrcode"></i> منيو العميل (QR)
+                </button>
+                <button onclick="switchMode('pos')" id="btn-mode-pos" class="mode-tab-btn px-4 py-1.5 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-cash-register"></i> الكاشير (POS)
+                </button>
+                <button onclick="switchMode('kds')" id="btn-mode-kds" class="mode-tab-btn px-4 py-1.5 rounded-full text-xs font-bold text-gray-400 hover:text-white transition-all flex items-center gap-2 relative">
+                    <i class="fa-solid fa-fire-burner"></i> شاشة المطبخ (KDS)
+                    <span id="kds-badge" class="hidden absolute -top-1 -right-1 bg-sushiRed text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">0</span>
+                </button>
+            </div>
 
-        // Custom Leaflet Pin Icon
-        const customIcon = L.divIcon({
-          className: 'custom-pin-wrapper',
-          html: `<div class="custom-pin ${pinClass} w-8 h-8">${item.type === 'customer' ? 'C' : 'S'}</div>`,
-          iconSize: [32, 32],
-          iconAnchor: [16, 16]
+            <!-- Quick Stats & Actions -->
+            <div class="hidden lg:flex items-center gap-4 text-xs">
+                <div class="text-left">
+                    <div class="text-gray-400">الحالة النظام:</div>
+                    <div class="text-green-400 font-bold flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-green-500 animate-ping"></span> متصل تلقائياً
+                    </div>
+                </div>
+                <button onclick="resetSystemData()" class="text-gray-400 hover:text-sushiRed transition-colors px-2 py-1 border border-gray-700 hover:border-sushiRed rounded text-[11px]">
+                    <i class="fa-solid fa-arrows-rotate"></i> إعادة ضبط البيانات
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- NOTIFICATION TOAST -->
+    <div id="toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 transform -translate-y-10 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toast-content" class="px-6 py-3 rounded-full glass-panel border border-gold text-sm font-semibold flex items-center gap-3 shadow-2xl">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-gold"></i>
+            <span id="toast-message">تمت العملية بنجاح</span>
+        </div>
+    </div>
+
+    <!-- MAIN SYSTEM CONTENT AREA CONTAINER -->
+    <main class="max-w-7xl mx-auto w-full p-3 sm:p-6 flex-1">
+
+        <!-- ========================================================================= -->
+        <!-- 1. CUSTOMER QR MENU VIEW -->
+        <!-- ========================================================================= -->
+        <section id="view-menu" class="space-y-6 animate-fade-in">
+            <!-- Hero Banner -->
+            <div class="relative rounded-2xl overflow-hidden glass-panel border border-gold/30 p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-sushiRed/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="absolute -left-10 -top-10 w-48 h-48 bg-gold/10 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <div class="space-y-3 text-center md:text-right z-10">
+                    <span class="bg-sushiRed/20 text-sushiRed border border-sushiRed/30 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                         التجربة الفاخرة لعلامة Dr. Sushi
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl font-black text-white leading-tight">
+                        أرقى فنون <span class="gold-gradient-text">السوشي والمأكولات اليابانية</span>
+                    </h2>
+                    <p class="text-gray-300 text-sm max-w-xl">
+                        اختر أصنافك المفضلة من الساشيمي والنيجيري والقطع المبتكرة بعناية دكتور سوشي. اطلب الآن من طاولتك مباشرة!
+                    </p>
+                </div>
+
+                <!-- Table Selector Selector Box -->
+                <div class="glass-panel-gold p-4 rounded-xl text-center z-10 min-w-[200px] border border-gold/40 shadow-lg">
+                    <label class="block text-xs text-gold font-bold mb-1">رقم الطاولة / نوع الطلب</label>
+                    <select id="menu-table-select" class="w-full bg-black/70 border border-gold/50 rounded-lg p-2 text-sm text-white font-bold focus:outline-none focus:border-gold">
+                        <option value="T-01">طاولة 01 (داخلي)</option>
+                        <option value="T-02">طاولة 02 (داخلي)</option>
+                        <option value="T-03">طاولة 03 (داخلي)</option>
+                        <option value="T-04">طاولة 04 (داخلي)</option>
+                        <option value="TAKEAWAY">طلب سفري (Takeaway)</option>
+                        <option value="DELIVERY">توصيل (Delivery)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Category Filter Pills -->
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none" id="category-pills">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Products Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="products-grid">
+                <!-- Products Injected via JS -->
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- 2. CASHIER POS VIEW -->
+        <!-- ========================================================================= -->
+        <section id="view-pos" class="hidden space-y-6 animate-fade-in">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Order Receiving Table (Left 2 Columns) -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="glass-panel p-5 rounded-2xl border border-gold/20 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-list-check text-gold"></i> متابعة وإدارة جميع الطلبات
+                            </h2>
+                            <p class="text-xs text-gray-400">الطلبات الواردة من المنيو الرقمي والكاشير المباشر</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="text-xs px-3 py-1 rounded-full bg-black/50 border border-gold/30 text-gold font-bold flex items-center gap-1">
+                                <span id="pos-total-orders-count">0</span> طلبات الكلية
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Orders Table Card -->
+                    <div class="glass-panel rounded-2xl overflow-hidden border border-gold/20">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-right text-sm">
+                                <thead class="bg-black/60 text-gold text-xs uppercase border-b border-gold/20">
+                                    <tr>
+                                        <th class="p-4">رقم الطلب</th>
+                                        <th class="p-4">الموقع / الطاولة</th>
+                                        <th class="p-4">الأصناف</th>
+                                        <th class="p-4">الإجمالي</th>
+                                        <th class="p-4">الحالة</th>
+                                        <th class="p-4 text-center">الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pos-orders-tbody" class="divide-y divide-gray-800/60">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Direct Quick Order Creator / Bill Receipt (Right Column) -->
+                <div class="space-y-4">
+                    <div class="glass-panel p-5 rounded-2xl border border-gold/30 space-y-4">
+                        <h3 class="text-lg font-bold text-gold border-b border-gold/20 pb-2 flex items-center justify-between">
+                            <span><i class="fa-solid fa-calculator text-sushiRed"></i> إنشاء طلب كاشير سريع</span>
+                            <span class="text-xs text-gray-400">POS Direct</span>
+                        </h3>
+
+                        <!-- Select Table -->
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">حدد الطاولة أو النوع:</label>
+                            <select id="pos-direct-table" class="w-full bg-black/60 border border-gold/30 rounded-lg p-2 text-sm text-white focus:outline-none focus:border-gold">
+                                <option value="T-01">طاولة 01</option>
+                                <option value="T-02">طاولة 02</option>
+                                <option value="T-05">طاولة VIP 05</option>
+                                <option value="TAKEAWAY">سفري - Takeaway</option>
+                            </select>
+                        </div>
+
+                        <!-- Add Quick Items Selection -->
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">إضافة صنف سريع:</label>
+                            <div class="flex gap-2">
+                                <select id="pos-quick-item-select" class="w-full bg-black/60 border border-gold/30 rounded-lg p-2 text-xs text-white focus:outline-none">
+                                    <!-- Options injected JS -->
+                                </select>
+                                <button onclick="addPosDirectItem()" class="gold-btn px-4 py-2 rounded-lg text-black font-bold text-xs whitespace-nowrap">
+                                    <i class="fa-solid fa-plus"></i> إضافة
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Current Order Items Preview -->
+                        <div class="bg-black/40 rounded-xl p-3 border border-gray-800 max-h-48 overflow-y-auto space-y-2" id="pos-direct-items-container">
+                            <p class="text-xs text-gray-500 text-center py-4">لم يتم إضافة أصناف للطلب السريع بعد</p>
+                        </div>
+
+                        <!-- Financials Calculation -->
+                        <div class="space-y-1.5 border-t border-gray-800 pt-3 text-xs">
+                            <div class="flex justify-between text-gray-400">
+                                <span>المجموع الفرعي:</span>
+                                <span id="pos-subtotal">0.00 EGP</span>
+                            </div>
+                            <div class="flex justify-between text-gray-400">
+                                <span>ضريبة القيمة المضافة (14%):</span>
+                                <span id="pos-tax">0.00 EGP</span>
+                            </div>
+                            <div class="flex justify-between text-gray-400">
+                                <span>خدمة الصالة (12%):</span>
+                                <span id="pos-service">0.00 EGP</span>
+                            </div>
+                            <div class="flex justify-between text-base font-bold text-gold border-t border-gold/30 pt-2">
+                                <span>الإجمالي النهائي:</span>
+                                <span id="pos-total">0.00 EGP</span>
+                            </div>
+                        </div>
+
+                        <!-- Complete Order Action -->
+                        <button onclick="submitPosDirectOrder()" class="w-full py-3 rounded-xl gold-btn text-black font-extrabold text-sm shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-print"></i> تأكيد الطلب وطباعة الفاتورة
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================================================= -->
+        <!-- 3. KITCHEN DISPLAY SYSTEM (KDS) VIEW -->
+        <!-- ========================================================================= -->
+        <section id="view-kds" class="hidden space-y-6 animate-fade-in">
+            <!-- KDS Header Banner -->
+            <div class="glass-panel p-4 rounded-2xl border border-gold/20 flex flex-wrap items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-sushiRed/20 border border-sushiRed flex items-center justify-center text-sushiRed text-xl">
+                        <i class="fa-solid fa-fire"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">شاشة المطبخ والشيف (Kitchen Display System)</h2>
+                        <p class="text-xs text-gray-400">متابعة تحضير طلبات السوشي فور ورودها مع المؤشرات الزمنية</p>
+                    </div>
+                </div>
+
+                <!-- Filter KDS Status -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-400">تصفية:</span>
+                    <button onclick="renderKDS('ALL')" class="px-3 py-1 rounded-lg text-xs font-bold bg-gold text-black">الكل</button>
+                    <button onclick="renderKDS('PENDING')" class="px-3 py-1 rounded-lg text-xs font-bold bg-black/60 border border-gold/30 text-gray-300">جديد / قيد التحضير</button>
+                </div>
+            </div>
+
+            <!-- Active Orders Grid in Kitchen -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="kds-cards-grid">
+                <!-- KDS Cards injected dynamically -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SHOPPING CART FLOATING BAR / MODAL (FOR CUSTOMER MENU VIEW) -->
+    <div id="cart-drawer" class="fixed bottom-0 left-0 right-0 z-40 bg-cardBg/95 backdrop-blur-xl border-t border-gold/30 p-4 transform translate-y-full transition-transform duration-300 ease-in-out shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+        <div class="max-w-4xl mx-auto space-y-4">
+            <div class="flex items-center justify-between border-b border-gold/20 pb-3">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-bag-shopping text-gold text-lg"></i>
+                    <h3 class="text-lg font-bold text-white">سلة طلباتك - Dr. Sushi</h3>
+                    <span id="cart-count-badge" class="bg-sushiRed text-white text-xs px-2 py-0.5 rounded-full font-bold">0 أصناف</span>
+                </div>
+                <button onclick="toggleCart(false)" class="text-gray-400 hover:text-white text-xl">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Cart Items List -->
+            <div id="cart-items-list" class="max-h-48 overflow-y-auto space-y-2 pr-1">
+                <!-- Injected via JS -->
+            </div>
+
+            <!-- Notes & Total Footer -->
+            <div class="pt-2 border-t border-gold/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <input type="text" id="cart-order-notes" placeholder="ملاحظات خاصة للشيف (مثال: بدون حار، صويا إضافة...)" class="w-full sm:w-1/2 bg-black/70 border border-gold/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-gold">
+                
+                <div class="flex items-center gap-4 w-full sm:w-auto justify-between">
+                    <div>
+                        <span class="text-xs text-gray-400 block">الإجمالي الكلي:</span>
+                        <span id="cart-total-price" class="text-xl font-extrabold gold-gradient-text">0 EGP</span>
+                    </div>
+                    <button onclick="submitCustomerOrder()" class="gold-btn px-6 py-3 rounded-xl text-black font-extrabold text-sm flex items-center gap-2 shadow-lg">
+                        <i class="fa-solid fa-paper-plane"></i> إرسال الطلب للمطبخ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FLOATING CART BUTTON FOR MOBILE -->
+    <button id="floating-cart-btn" onclick="toggleCart(true)" class="hidden fixed bottom-6 left-6 z-30 gold-btn p-4 rounded-full text-black font-bold shadow-2xl flex items-center justify-center gap-2 border-2 border-black">
+        <i class="fa-solid fa-cart-shopping text-xl"></i>
+        <span id="floating-cart-count" class="bg-sushiRed text-white text-xs w-6 h-6 rounded-full flex items-center justify-center font-bold">0</span>
+    </button>
+
+    <!-- PRINTABLE RECEIPT MODAL -->
+    <div id="receipt-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-white text-black rounded-xl max-w-sm w-full p-6 space-y-4 shadow-2xl relative font-mono text-xs">
+            <button onclick="closeReceiptModal()" class="absolute top-3 left-3 text-gray-500 hover:text-black text-lg font-bold">✕</button>
+            
+            <div class="text-center border-b border-gray-300 pb-3">
+                <h2 class="text-lg font-extrabold tracking-wider">دكتور سوشي - Dr. Sushi</h2>
+                <p class="text-[10px] text-gray-600">فرع القاهرة - النزهة الجديدة</p>
+                <p class="text-[10px] text-gray-600">رقم الضريبي: 987-654-321</p>
+                <div class="mt-2 text-[11px] font-bold bg-gray-100 py-1 rounded" id="receipt-header-info">
+                    <!-- Dynamic Receipt Info -->
+                </div>
+            </div>
+
+            <!-- Receipt Items -->
+            <div class="space-y-2 border-b border-gray-300 pb-3" id="receipt-items-list">
+                <!-- Items Injected -->
+            </div>
+
+            <!-- Receipt Totals -->
+            <div class="space-y-1 text-right" id="receipt-totals">
+                <!-- Totals Injected -->
+            </div>
+
+            <div class="text-center border-t border-dashed border-gray-400 pt-3 text-[10px] text-gray-500">
+                <p>شكراً لزيارتكم دكتور سوشي!</p>
+                <p>Doctor Sushi: Expertly Crafted Asian Fusion</p>
+            </div>
+
+            <button onclick="window.print()" class="w-full py-2 bg-black text-white font-bold rounded hover:bg-gray-800 transition-colors">
+                <i class="fa-solid fa-print"></i> طباعة الفاتورة
+            </button>
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="glass-panel border-t border-gold/10 py-4 px-6 text-center text-xs text-gray-500">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>© 2026 جميع الحقوق محفوظة - مطعم دكتور سوشي (Dr. Sushi System)</p>
+            <p class="gold-gradient-text font-semibold">نظام إدارة مطاعم شامل (QR Menu + POS + KDS)</p>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT LOGIC & STATE MANAGEMENT -->
+    <!-- ========================================================================= -->
+    <script>
+        // -------------------------------------------------------------
+        // 1. DATA MODELS & INITIAL MOCK PRODUCTS
+        // -------------------------------------------------------------
+        const MENU_CATEGORIES = [
+            { id: 'all', name: 'الكل', icon: 'fa-utensils' },
+            { id: 'combos', name: 'عروض الكومبو', icon: 'fa-box-open' },
+            { id: 'rolls', name: 'رولز VIP', icon: 'fa-scroll' },
+            { id: 'nigiri', name: 'نيجيري وساشيمي', icon: 'fa-fish' },
+            { id: 'appetizers', name: 'المقبلات', icon: 'fa-bowl-food' },
+            { id: 'drinks', name: 'المشروبات والتحلية', icon: 'fa-glass-water' }
+        ];
+
+        const PRODUCTS = [
+            {
+                id: 101,
+                name: 'دكتور سوشي رايزينج كومبو',
+                category: 'combos',
+                price: 790,
+                pieces: '30 قطعة',
+                image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80',
+                description: 'تشكيلة فاخرة تجمع بين الفيلادلفيا، الكرانشي roll، والديناميت ميكس.'
+            },
+            {
+                id: 102,
+                name: 'فيلادلفيا رول كلاسيك',
+                category: 'rolls',
+                price: 195,
+                pieces: '8 قطع',
+                image: 'https://images.unsplash.com/photo-1611143669185-af224c5e3252?auto=format&fit=crop&w=600&q=80',
+                description: 'سلمون طازج، جينة كريمية غنية، خيار، وأرز السوشي المتبل.'
+            },
+            {
+                id: 103,
+                name: 'دراجون VIP رول',
+                category: 'rolls',
+                price: 240,
+                pieces: '8 قطع',
+                image: 'https://images.unsplash.com/photo-1563245372-f21724e3856d?auto=format&fit=crop&w=600&q=80',
+                description: 'جمبري جمبو تيمبورا محشو بالأفوكادو ومغطى بشريحة أفوكادو وياكي صوص.'
+            },
+            {
+                id: 104,
+                name: 'ساشيمي سلمون ميكس',
+                category: 'nigiri',
+                price: 220,
+                pieces: '5 قطع',
+                image: 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?auto=format&fit=crop&w=600&q=80',
+                description: 'شرائح السلمون النرويجي الطازج المقشورة بعناية فائقة.'
+            },
+            {
+                id: 105,
+                name: 'نيجيري تونى طازجة',
+                category: 'nigiri',
+                price: 180,
+                pieces: '4 قطع',
+                image: 'https://images.unsplash.com/photo-1617196034796-73dfa7b1fd56?auto=format&fit=crop&w=600&q=80',
+                description: 'قطع التونة الحمراء الرائعة فوق وسائد أرز السوشي الياباني.'
+            },
+            {
+                id: 106,
+                name: 'ديناميت شريمب مقبلات',
+                category: 'appetizers',
+                price: 165,
+                pieces: 'طبق مشكل',
+                image: 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=600&q=80',
+                description: 'قطع الجمبري المقرمشة المغطاة بصلصة الديناميت الخاصة الحارة.'
+            },
+            {
+                id: 107,
+                name: 'شاي ياباني ماتشا فريد',
+                category: 'drinks',
+                price: 75,
+                pieces: 'كوب فاخر',
+                image: 'https://images.unsplash.com/photo-1536256263959-770b48d82b0a?auto=format&fit=crop&w=600&q=80',
+                description: 'مشروب الماتشا الأصلي المنعش المصنوع على الطريقة اليابانية.'
+            }
+        ];
+
+        // -------------------------------------------------------------
+        // 2. STATE MANAGEMENT & LOCAL STORAGE
+        // -------------------------------------------------------------
+        let currentCategory = 'all';
+        let cart = [];
+        let posDirectCart = [];
+        let orders = [];
+
+        // Load initial state from LocalStorage or populate default
+        function initStore() {
+            const storedOrders = localStorage.getItem('dr_sushi_orders');
+            if (storedOrders) {
+                try {
+                    orders = JSON.parse(storedOrders);
+                } catch (e) {
+                    orders = getSeedOrders();
+                }
+            } else {
+                orders = getSeedOrders();
+                saveOrders();
+            }
+        }
+
+        function saveOrders() {
+            localStorage.setItem('dr_sushi_orders', JSON.stringify(orders));
+            // Trigger custom event for inter-tab sync simulation
+            window.dispatchEvent(new Event('storage'));
+        }
+
+        function getSeedOrders() {
+            return [
+                {
+                    id: 'ORD-901',
+                    table: 'طاولة 02',
+                    items: [
+                        { name: 'فيلادلفيا رول كلاسيك', qty: 2, price: 195 },
+                        { name: 'ديناميت شريمب مقبلات', qty: 1, price: 165 }
+                    ],
+                    total: 555,
+                    status: 'PENDING', // PENDING, PREPARING, READY, COMPLETED
+                    time: new Date(Date.now() - 8 * 60000).toISOString(),
+                    notes: 'بدون واني وواسابي حار'
+                },
+                {
+                    id: 'ORD-902',
+                    table: 'سفري - Takeaway',
+                    items: [
+                        { name: 'دكتور سوشي رايزينج كومبو', qty: 1, price: 790 }
+                    ],
+                    total: 790,
+                    status: 'PREPARING',
+                    time: new Date(Date.now() - 15 * 60000).toISOString(),
+                    notes: 'تغليف إضافي ممتاز'
+                }
+            ];
+        }
+
+        // -------------------------------------------------------------
+        // 3. RENDER FUNCTIONS & UI INTERACTION
+        // -------------------------------------------------------------
+        
+        // Mode Switcher (QR Menu / POS / KDS)
+        function switchMode(mode) {
+            document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+            document.querySelectorAll('.mode-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-gold', 'text-black', 'shadow-md');
+                btn.classList.add('text-gray-400');
+            });
+
+            const activeBtn = document.getElementById(`btn-mode-${mode}`);
+            activeBtn.classList.add('bg-gold', 'text-black', 'shadow-md');
+            activeBtn.classList.remove('text-gray-400');
+
+            document.getElementById(`view-${mode}`).classList.remove('hidden');
+
+            // Render specific components on view change
+            if (mode === 'pos') renderPOS();
+            if (mode === 'kds') renderKDS('ALL');
+        }
+
+        // --- MENU RENDERERS ---
+        function renderCategoryPills() {
+            const container = document.getElementById('category-pills');
+            container.innerHTML = MENU_CATEGORIES.map(cat => `
+                <button onclick="setCategory('${cat.id}')" class="px-5 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+                    currentCategory === cat.id 
+                    ? 'bg-gold text-black shadow-[0_0_15px_rgba(212,175,55,0.4)]' 
+                    : 'glass-panel text-gray-300 hover:border-gold/50'
+                }">
+                    <i class="fa-solid ${cat.icon}"></i> ${cat.name}
+                </button>
+            `).join('');
+        }
+
+        function setCategory(catId) {
+            currentCategory = catId;
+            renderCategoryPills();
+            renderProducts();
+        }
+
+        function renderProducts() {
+            const container = document.getElementById('products-grid');
+            const filtered = currentCategory === 'all' 
+                ? PRODUCTS 
+                : PRODUCTS.filter(p => p.category === currentCategory);
+
+            container.innerHTML = filtered.map(product => `
+                <div class="glass-panel rounded-2xl overflow-hidden border border-gold/20 flex flex-col justify-between group hover:border-gold/60 transition-all duration-300 hover:-translate-y-1">
+                    <div>
+                        <!-- Product Image -->
+                        <div class="relative h-48 overflow-hidden">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onerror="this.src='https://placehold.co/600x400/16161E/D4AF37?text=Dr+Sushi'">
+                            <span class="absolute top-3 right-3 bg-black/80 backdrop-blur-md border border-gold/40 text-gold text-[11px] font-bold px-2.5 py-1 rounded-full">
+                                <i class="fa-solid fa-layer-group text-[9px]"></i> ${product.pieces}
+                            </span>
+                        </div>
+
+                        <!-- Product Info -->
+                        <div class="p-4 space-y-2">
+                            <h3 class="text-base font-bold text-white group-hover:text-gold transition-colors">${product.name}</h3>
+                            <p class="text-xs text-gray-400 line-clamp-2 leading-relaxed">${product.description}</p>
+                        </div>
+                    </div>
+
+                    <!-- Price & Add Action -->
+                    <div class="p-4 pt-0 flex items-center justify-between mt-2 border-t border-gray-800/60 pt-3">
+                        <div>
+                            <span class="text-xs text-gray-400 block">السعر:</span>
+                            <span class="text-lg font-black gold-gradient-text">${product.price} EGP</span>
+                        </div>
+                        <button onclick="addToCart(${product.id})" class="gold-btn px-4 py-2 rounded-xl text-black text-xs font-bold flex items-center gap-1.5 shadow-md">
+                            <i class="fa-solid fa-plus"></i> إضافة للسلة
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // --- CART MANAGEMENT ---
+        function addToCart(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            if (!product) return;
+
+            const existing = cart.find(item => item.id === productId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+
+            updateCartUI();
+            showToast(`تمت إضافة "${product.name}" إلى السلة`);
+            toggleCart(true);
+        }
+
+        function updateCartQty(productId, delta) {
+            const item = cart.find(i => i.id === productId);
+            if (!item) return;
+
+            item.qty += delta;
+            if (item.qty <= 0) {
+                cart = cart.filter(i => i.id !== productId);
+            }
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            const cartItemsList = document.getElementById('cart-items-list');
+            const totalCount = cart.reduce((sum, item) => sum + item.qty, 0);
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            document.getElementById('cart-count-badge').innerText = `${totalCount} أصناف`;
+            document.getElementById('floating-cart-count').innerText = totalCount;
+            document.getElementById('cart-total-price').innerText = `${totalPrice} EGP`;
+
+            const floatBtn = document.getElementById('floating-cart-btn');
+            if (totalCount > 0) {
+                floatBtn.classList.remove('hidden');
+            } else {
+                floatBtn.classList.add('hidden');
+                toggleCart(false);
+            }
+
+            if (cart.length === 0) {
+                cartItemsList.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">السلة فارغة حالياً</p>`;
+                return;
+            }
+
+            cartItemsList.innerHTML = cart.map(item => `
+                <div class="flex items-center justify-between bg-black/50 p-2.5 rounded-xl border border-gray-800">
+                    <div class="flex items-center gap-3">
+                        <img src="${item.image}" class="w-10 h-10 rounded-lg object-cover border border-gold/30">
+                        <div>
+                            <h4 class="text-xs font-bold text-white">${item.name}</h4>
+                            <span class="text-[11px] text-gold font-semibold">${item.price} EGP</span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center bg-black rounded-lg border border-gold/20">
+                            <button onclick="updateCartQty(${item.id}, -1)" class="px-2.5 py-1 text-gold hover:text-white font-bold text-xs">-</button>
+                            <span class="px-2 text-xs font-bold text-white">${item.qty}</span>
+                            <button onclick="updateCartQty(${item.id}, 1)" class="px-2.5 py-1 text-gold hover:text-white font-bold text-xs">+</button>
+                        </div>
+                        <span class="text-xs font-bold text-white min-w-[60px] text-left">${item.price * item.qty} EGP</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function toggleCart(show) {
+            const drawer = document.getElementById('cart-drawer');
+            if (show && cart.length > 0) {
+                drawer.classList.remove('translate-y-full');
+            } else {
+                drawer.classList.add('translate-y-full');
+            }
+        }
+
+        function submitCustomerOrder() {
+            if (cart.length === 0) return;
+
+            const tableSelect = document.getElementById('menu-table-select').value;
+            const notes = document.getElementById('cart-order-notes').value;
+            const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+            const newOrder = {
+                id: `ORD-${Math.floor(100 + Math.random() * 900)}`,
+                table: tableSelect,
+                items: cart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                total: totalPrice,
+                status: 'PENDING',
+                time: new Date().toISOString(),
+                notes: notes || 'لا توجد ملاحظات'
+            };
+
+            orders.unshift(newOrder);
+            saveOrders();
+
+            // Clear Cart & UI
+            cart = [];
+            updateCartUI();
+            toggleCart(false);
+            document.getElementById('cart-order-notes').value = '';
+
+            showToast(`تم إرسال الطلب ${newOrder.id} بنجاح للمطبخ!`);
+            updateKdsBadge();
+        }
+
+        // --- POS RENDERERS & ACTIONS ---
+        function populatePosItemsDropdown() {
+            const select = document.getElementById('pos-quick-item-select');
+            select.innerHTML = PRODUCTS.map(p => `
+                <option value="${p.id}">${p.name} - ${p.price} EGP</option>
+            `).join('');
+        }
+
+        function addPosDirectItem() {
+            const prodId = parseInt(document.getElementById('pos-quick-item-select').value);
+            const product = PRODUCTS.find(p => p.id === prodId);
+            if (!product) return;
+
+            const existing = posDirectCart.find(i => i.id === prodId);
+            if (existing) {
+                existing.qty += 1;
+            } else {
+                posDirectCart.push({ ...product, qty: 1 });
+            }
+            renderPosDirectCart();
+        }
+
+        function renderPosDirectCart() {
+            const container = document.getElementById('pos-direct-items-container');
+            if (posDirectCart.length === 0) {
+                container.innerHTML = `<p class="text-xs text-gray-500 text-center py-4">لم يتم إضافة أصناف للطلب السريع بعد</p>`;
+                updatePosTotals(0);
+                return;
+            }
+
+            container.innerHTML = posDirectCart.map(item => `
+                <div class="flex items-center justify-between text-xs bg-black/60 p-2 rounded-lg border border-gray-800">
+                    <span class="text-white font-semibold">${item.name} x${item.qty}</span>
+                    <div class="flex items-center gap-2">
+                        <span class="text-gold font-bold">${item.price * item.qty} EGP</span>
+                        <button onclick="removePosDirectItem(${item.id})" class="text-sushiRed hover:text-white px-1">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            const subtotal = posDirectCart.reduce((s, i) => s + (i.price * i.qty), 0);
+            updatePosTotals(subtotal);
+        }
+
+        function removePosDirectItem(id) {
+            posDirectCart = posDirectCart.filter(i => i.id !== id);
+            renderPosDirectCart();
+        }
+
+        function updatePosTotals(subtotal) {
+            const tax = subtotal * 0.14;
+            const service = subtotal * 0.12;
+            const total = subtotal + tax + service;
+
+            document.getElementById('pos-subtotal').innerText = `${subtotal.toFixed(2)} EGP`;
+            document.getElementById('pos-tax').innerText = `${tax.toFixed(2)} EGP`;
+            document.getElementById('pos-service').innerText = `${service.toFixed(2)} EGP`;
+            document.getElementById('pos-total').innerText = `${total.toFixed(2)} EGP`;
+        }
+
+        function submitPosDirectOrder() {
+            if (posDirectCart.length === 0) {
+                showToast('الرجاء إضافة أصناف أولاً لإتمام الطلب', 'error');
+                return;
+            }
+
+            const table = document.getElementById('pos-direct-table').value;
+            const subtotal = posDirectCart.reduce((s, i) => s + (i.price * i.qty), 0);
+            const tax = subtotal * 0.14;
+            const service = subtotal * 0.12;
+            const grandTotal = subtotal + tax + service;
+
+            const newOrder = {
+                id: `POS-${Math.floor(100 + Math.random() * 900)}`,
+                table: table,
+                items: posDirectCart.map(i => ({ name: i.name, qty: i.qty, price: i.price })),
+                total: grandTotal,
+                subtotal: subtotal,
+                tax: tax,
+                service: service,
+                status: 'COMPLETED',
+                time: new Date().toISOString(),
+                notes: 'طلب مباشر كاشير'
+            };
+
+            orders.unshift(newOrder);
+            saveOrders();
+
+            // Print receipt preview
+            openReceiptModal(newOrder);
+
+            // Reset
+            posDirectCart = [];
+            renderPosDirectCart();
+            renderPOS();
+            showToast(`تم إتمام الفاتورة ${newOrder.id} بنجاح!`);
+        }
+
+        function renderPOS() {
+            const tbody = document.getElementById('pos-orders-tbody');
+            document.getElementById('pos-total-orders-count').innerText = orders.length;
+
+            if (orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center p-6 text-gray-500">لا توجد طلبات مسجلة</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = orders.map(ord => {
+                const statusBadge = getStatusBadgeHTML(ord.status);
+                const itemsText = ord.items.map(i => `${i.name} (x${i.qty})`).join(', ');
+
+                return `
+                    <tr class="hover:bg-black/30 transition-colors">
+                        <td class="p-4 font-bold text-gold">${ord.id}</td>
+                        <td class="p-4 text-white">${ord.table}</td>
+                        <td class="p-4 text-gray-300 text-xs max-w-xs truncate" title="${itemsText}">${itemsText}</td>
+                        <td class="p-4 font-bold text-white">${ord.total.toFixed(2)} EGP</td>
+                        <td class="p-4">${statusBadge}</td>
+                        <td class="p-4 text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                ${ord.status !== 'COMPLETED' ? `
+                                    <button onclick="updateOrderStatus('${ord.id}', 'COMPLETED')" class="px-2.5 py-1 bg-green-600/20 text-green-400 border border-green-500/30 rounded text-xs hover:bg-green-600 hover:text-white">
+                                        تسليم/دفع
+                                    </button>
+                                ` : ''}
+                                <button onclick="openReceiptModalById('${ord.id}')" class="px-2.5 py-1 glass-panel text-gray-300 rounded text-xs hover:text-gold">
+                                    <i class="fa-solid fa-receipt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- KDS RENDERERS ---
+        function renderKDS(filter = 'ALL') {
+            const grid = document.getElementById('kds-cards-grid');
+            let filteredOrders = orders.filter(o => o.status !== 'COMPLETED');
+
+            if (filter === 'PENDING') {
+                filteredOrders = filteredOrders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING');
+            }
+
+            if (filteredOrders.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-12 glass-panel rounded-2xl">
+                        <i class="fa-solid fa-circle-check text-4xl text-green-500 mb-3 block"></i>
+                        <h3 class="text-lg font-bold text-white">لا توجد طلبات قيد التحضير في المطبخ حالياً</h3>
+                        <p class="text-xs text-gray-400">جميع الطلبات تم إنجازها بنجاح!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredOrders.map(ord => {
+                const minutesAgo = Math.floor((new Date() - new Date(ord.time)) / 60000);
+                const isUrgent = minutesAgo >= 10;
+
+                return `
+                    <div class="glass-panel rounded-2xl border ${isUrgent ? 'border-sushiRed urgent-card' : 'border-gold/30'} p-5 flex flex-col justify-between space-y-4">
+                        <div>
+                            <!-- Header Info -->
+                            <div class="flex items-center justify-between border-b border-gray-800 pb-3">
+                                <div>
+                                    <span class="text-lg font-extrabold text-gold">${ord.id}</span>
+                                    <span class="block text-xs text-white font-bold">${ord.table}</span>
+                                </div>
+                                <div class="text-left">
+                                    <span class="text-xs ${isUrgent ? 'text-sushiRed animate-pulse' : 'text-gray-400'} font-bold block">
+                                        <i class="fa-regular fa-clock"></i> منذ ${minutesAgo} دقيقة
+                                    </span>
+                                    <span class="text-[10px] bg-black/60 px-2 py-0.5 rounded text-gray-300">
+                                        ${new Date(ord.time).toLocaleTimeString('ar-EG', {hour: '2-digit', minute:'2-digit'})}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Items List -->
+                            <div class="py-3 space-y-2">
+                                ${ord.items.map(item => `
+                                    <div class="flex justify-between items-center bg-black/40 p-2 rounded-lg text-xs">
+                                        <span class="font-bold text-white">${item.name}</span>
+                                        <span class="bg-gold text-black font-extrabold px-2 py-0.5 rounded-md">x${item.qty}</span>
+                                    </div>
+                                me`).join('')}
+                            </div>
+
+                            <!-- Notes -->
+                            ${ord.notes ? `
+                                <div class="bg-sushiRed/10 border border-sushiRed/30 p-2 rounded-lg text-[11px] text-sushiRed">
+                                    <i class="fa-solid fa-comment-dots"></i> <strong>ملاحظات:</strong> ${ord.notes}
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Action Status Buttons -->
+                        <div class="pt-2 border-t border-gray-800 flex gap-2">
+                            ${ord.status === 'PENDING' ? `
+                                <button onclick="updateOrderStatus('${ord.id}', 'PREPARING')" class="w-full py-2 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-xl text-xs font-bold hover:bg-amber-500 hover:text-black transition-colors">
+                                    <i class="fa-solid fa-fire"></i> لبدء التحضير
+                                </button>
+                            ` : ''}
+                            ${ord.status === 'PREPARING' ? `
+                                <button onclick="updateOrderStatus('${ord.id}', 'READY')" class="w-full py-2 bg-green-500/20 text-green-400 border border-green-500/40 rounded-xl text-xs font-bold hover:bg-green-500 hover:text-black transition-colors">
+                                    <i class="fa-solid fa-check-double"></i> جاهز للتسليم
+                                </button>
+                            ` : ''}
+                            ${ord.status === 'READY' ? `
+                                <button onclick="updateOrderStatus('${ord.id}', 'COMPLETED')" class="w-full py-2 gold-btn text-black rounded-xl text-xs font-bold">
+                                    <i class="fa-solid fa-box-check"></i> إغلاق الطلب
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Helper Status Badges
+        function getStatusBadgeHTML(status) {
+            switch(status) {
+                case 'PENDING':
+                    return `<span class="bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold"><i class="fa-solid fa-clock"></i> في الانتظار</span>`;
+                case 'PREPARING':
+                    return `<span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold"><i class="fa-solid fa-fire"></i> قيد التحضير</span>`;
+                case 'READY':
+                    return `<span class="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold"><i class="fa-solid fa-bell"></i> جاهز للتسليم</span>`;
+                case 'COMPLETED':
+                    return `<span class="bg-green-500/20 text-green-400 border border-green-500/30 px-2.5 py-1 rounded-full text-[11px] font-bold"><i class="fa-solid fa-check"></i> مكتمل ومسدد</span>`;
+                default:
+                    return status;
+            }
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            const ord = orders.find(o => o.id === orderId);
+            if (ord) {
+                ord.status = newStatus;
+                saveOrders();
+                renderPOS();
+                renderKDS('ALL');
+                updateKdsBadge();
+                showToast(`تم تحديث حالة الطلب ${orderId} إلى ${newStatus}`);
+            }
+        }
+
+        function updateKdsBadge() {
+            const pendingCount = orders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING').length;
+            const badge = document.getElementById('kds-badge');
+            if (pendingCount > 0) {
+                badge.innerText = pendingCount;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // --- RECEIPT MODAL LOGIC ---
+        function openReceiptModal(order) {
+            const modal = document.getElementById('receipt-modal');
+            
+            document.getElementById('receipt-header-info').innerHTML = `
+                رقم الفاتورة: <strong>${order.id}</strong> | الطاولة: <strong>${order.table}</strong><br>
+                التاريخ: ${new Date(order.time).toLocaleString('ar-EG')}
+            `;
+
+            document.getElementById('receipt-items-list').innerHTML = order.items.map(item => `
+                <div class="flex justify-between text-xs">
+                    <span>${item.name} x${item.qty}</span>
+                    <span>${(item.price * item.qty).toFixed(2)} EGP</span>
+                </div>
+            `).join('');
+
+            const subtotal = order.subtotal || order.total;
+            const tax = order.tax || 0;
+            const service = order.service || 0;
+
+            document.getElementById('receipt-totals').innerHTML = `
+                <div class="flex justify-between text-gray-600"><span>المجموع:</span><span>${subtotal.toFixed(2)} EGP</span></div>
+                ${tax ? `<div class="flex justify-between text-gray-600"><span>الضريبة 14%:</span><span>${tax.toFixed(2)} EGP</span></div>` : ''}
+                ${service ? `<div class="flex justify-between text-gray-600"><span>الخدمة 12%:</span><span>${service.toFixed(2)} EGP</span></div>` : ''}
+                <div class="flex justify-between text-sm font-extrabold border-t border-black pt-1">
+                    <span>الإجمالي المدفوع:</span>
+                    <span>${order.total.toFixed(2)} EGP</span>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+        }
+
+        function openReceiptModalById(id) {
+            const ord = orders.find(o => o.id === id);
+            if (ord) openReceiptModal(ord);
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+        }
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.innerText = message;
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-sushiRed';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-gold';
+            }
+
+            toast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 3000);
+        }
+
+        function resetSystemData() {
+            if (confirm('هل أنت تأكد من إعادة ضبط كافة الطلبات والبيانات للتجربة؟')) {
+                localStorage.removeItem('dr_sushi_orders');
+                initStore();
+                renderPOS();
+                renderKDS('ALL');
+                updateKdsBadge();
+                showToast('تم إعادة ضبط النظام بنجاح!');
+            }
+        }
+
+        // Listen for storage changes across browser tabs for real-time synchronization simulation
+        window.addEventListener('storage', () => {
+            initStore();
+            renderPOS();
+            renderKDS('ALL');
+            updateKdsBadge();
         });
 
-        // Add Leaflet Marker
-        const marker = L.marker([item.lat, item.lng], { icon: customIcon }).addTo(map);
-        
-        const popupContent = `
-          <div class="p-2 text-slate-900 font-sans">
-            <span class="text-[10px] font-bold uppercase tracking-wider ${isCustomer ? 'text-cyan-600' : 'text-emerald-600'}">${item.type}</span>
-            <h4 class="font-bold text-sm leading-tight">${item.name}</h4>
-            <p class="text-xs text-slate-600 mt-1">${item.address}</p>
-            <p class="text-xs text-slate-800 font-medium mt-1">Contact: ${item.contactPerson}</p>
-            <a href="tel:${item.phone}" class="inline-block mt-2 text-xs font-semibold text-blue-600 hover:underline">Call ${item.phone}</a>
-          </div>
-        `;
+        // Auto Refresh KDS Timers every 30 seconds
+        setInterval(() => {
+            const kdsSection = document.getElementById('view-kds');
+            if (!kdsSection.classList.contains('hidden')) {
+                renderKDS('ALL');
+            }
+        }, 30000);
 
-        marker.bindPopup(popupContent);
-        markers.push(marker);
-        bounds.push([item.lat, item.lng]);
-      });
-
-      // Fit map bounds to visible markers
-      if (bounds.length > 0) {
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-      }
-
-      lucide.createIcons();
-    }
-
-    // Zoom to specific point on card click
-    function focusEntity(lat, lng) {
-      map.flyTo([lat, lng], 14, { duration: 1.2 });
-      const targetMarker = markers.find(m => m.getLatLng().lat === lat && m.getLatLng().lng === lng);
-      if (targetMarker) targetMarker.openPopup();
-    }
-
-    window.onload = initMap;
-  </script>
+        // -------------------------------------------------------------
+        // 4. ON LOAD INITIALIZATION
+        // -------------------------------------------------------------
+        window.onload = function() {
+            initStore();
+            renderCategoryPills();
+            renderProducts();
+            populatePosItemsDropdown();
+            updateKdsBadge();
+        };
+    </script>
 </body>
 </html>
